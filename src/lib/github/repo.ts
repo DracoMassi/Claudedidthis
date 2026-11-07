@@ -1,4 +1,4 @@
-import { AuthError, ConflictError, NetworkError, NotFoundError } from '../errors';
+import { AbortedError, AuthError, ConflictError, NetworkError, NotFoundError, TimeoutError } from '../errors';
 
 export type TreeEntry = { path: string; type: 'blob' | 'tree'; sha: string };
 
@@ -23,15 +23,41 @@ export class GithubRepo {
     this.owner = owner; this.name = name; this.token = token; this.fetchImpl = fetchImpl;
   }
 
-  private async request(path: string, init: RequestInit = {}, accept = 'application/vnd.github+json'): Promise<Response> {
+  private async request(
+    path: string,
+    init: RequestInit = {},
+    accept = 'application/vnd.github+json',
+    opts: { timeoutMs?: number; signal?: AbortSignal } = {},
+  ): Promise<Response> {
+    if (opts.signal?.aborted) throw new AbortedError('Opération GitHub annulée');
+
+    const controller = new AbortController();
+    let timedOut = false;
+    const timeoutMs = opts.timeoutMs ?? 25_000;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+
+    const onParentAbort = () => controller.abort();
+    if (opts.signal) {
+      opts.signal.addEventListener('abort', onParentAbort, { once: true });
+    }
+
     let r: Response;
     try {
       r = await this.fetchImpl(`https://api.github.com/repos/${this.owner}/${this.name}${path}`, {
         ...init,
-        headers: { Authorization: `Bearer ${this.token}`, Accept: accept, 'X-GitHub-Api-Version': '2022-11-28' },
+        signal: controller.signal,
+        headers: { Authorization: `Bearer ${this.token}`, Accept: accept, 'X-GitHub-Api-Version': '2022-11-28', ...(init.headers ?? {}) },
       });
     } catch {
+      if (opts.signal?.aborted) throw new AbortedError('Opération GitHub annulée');
+      if (timedOut) throw new TimeoutError(`GitHub n'a pas répondu dans le délai imparti (${Math.round(timeoutMs / 1000)} s)`);
       throw new NetworkError();
+    } finally {
+      clearTimeout(timer);
+      if (opts.signal) opts.signal.removeEventListener('abort', onParentAbort);
     }
     if (r.status === 401 || r.status === 403) throw new AuthError('Jeton refusé ou expiré');
     if (r.status === 404) throw new NotFoundError();
@@ -40,24 +66,25 @@ export class GithubRepo {
     return r;
   }
 
-  async listTree(): Promise<TreeEntry[]> {
-    const j = (await (await this.request('/git/trees/HEAD?recursive=1')).json()) as { tree: TreeEntry[] };
+  async listTree(opts?: { signal?: AbortSignal }): Promise<TreeEntry[]> {
+    const j = (await (await this.request('/git/trees/HEAD?recursive=1', {}, 'application/vnd.github+json', opts)).json()) as { tree: TreeEntry[] };
     return j.tree.map(({ path, type, sha }) => ({ path, type, sha }));
   }
 
-  async readFile(path: string): Promise<{ content: string; sha: string }> {
-    const j = (await (await this.request(`/contents/${encodePath(path)}`)).json()) as { content: string; sha: string };
+  async readFile(path: string, opts?: { signal?: AbortSignal }): Promise<{ content: string; sha: string }> {
+    const j = (await (await this.request(`/contents/${encodePath(path)}`, {}, 'application/vnd.github+json', opts)).json()) as { content: string; sha: string };
     return { content: fromBase64(j.content), sha: j.sha };
   }
 
-  async readBinary(path: string): Promise<ArrayBuffer> {
-    return (await this.request(`/contents/${encodePath(path)}`, {}, 'application/vnd.github.raw+json')).arrayBuffer();
+  async readBinary(path: string, opts?: { signal?: AbortSignal }): Promise<ArrayBuffer> {
+    return (await this.request(`/contents/${encodePath(path)}`, {}, 'application/vnd.github.raw+json', opts)).arrayBuffer();
   }
 
-  async writeFile(path: string, content: string, opts: { message: string; sha?: string }): Promise<{ sha: string }> {
+  async writeFile(path: string, content: string, opts: { message: string; sha?: string; signal?: AbortSignal }): Promise<{ sha: string }> {
     const body: Record<string, string> = { message: opts.message, content: toBase64(content) };
     if (opts.sha) body.sha = opts.sha;
-    const j = (await (await this.request(`/contents/${encodePath(path)}`, { method: 'PUT', body: JSON.stringify(body) })).json()) as { content: { sha: string } };
+    const j = (await (await this.request(`/contents/${encodePath(path)}`, { method: 'PUT', body: JSON.stringify(body) }, 'application/vnd.github+json', opts)).json()) as { content: { sha: string } };
     return { sha: j.content.sha };
   }
 }
+

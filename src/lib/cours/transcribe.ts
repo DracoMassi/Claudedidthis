@@ -18,12 +18,24 @@ export async function transcribeLot(lot: Lot, deps: { llm(lot: Lot): Promise<str
   return t.trim().replace(/^```(?:markdown|md)?\s*\n?/i, '').replace(/\n?```\s*$/, '').trim();
 }
 
-export function transcribeWithGemini(o: { key: string; model: string; lot: Lot; fetchImpl?: typeof fetch }): Promise<string> {
+export function transcribeWithGemini(o: {
+  key: string;
+  model: string;
+  lot: Lot;
+  fetchImpl?: typeof fetch;
+  signal?: AbortSignal;
+  timeoutMs?: number;
+}): Promise<string> {
   return postGemini({
-    key: o.key, model: o.model, fetchImpl: o.fetchImpl,
+    key: o.key,
+    model: o.model,
+    fetchImpl: o.fetchImpl,
+    signal: o.signal,
+    timeoutMs: o.timeoutMs,
     body: {
       contents: [{ role: 'user', parts: [{ inlineData: { mimeType: o.lot.mime ?? 'application/pdf', data: toBase64(o.lot.data) } }, { text: transcriptionPrompt(o.lot) }] }],
       generationConfig: { temperature: 0.1, responseMimeType: 'text/plain' },
     },
   });
 }
+

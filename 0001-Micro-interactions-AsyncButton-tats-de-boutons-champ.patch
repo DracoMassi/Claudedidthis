@@ -1,0 +1,532 @@
+From 09028aeac32a5c41693442b28049496ec62a4e4e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 29 Oct 2026 18:28:55 +0000
+Subject: [PATCH] =?UTF-8?q?Micro-interactions=20:=20AsyncButton,=20=C3=A9t?=
+ =?UTF-8?q?ats=20de=20boutons,=20champs,=20correctif=20de=20priorit=C3=A9?=
+ =?UTF-8?q?=20CSS?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ src/theme/apple.css    | 130 ++++++++++++++++++++++++++-------------
+ src/ui/AsyncButton.tsx |  61 ++++++++++++++++++
+ src/ui/Library.tsx     |  35 ++++++-----
+ src/ui/Review.tsx      |   9 ++-
+ src/ui/Settings.tsx    |   5 +-
+ src/ui/glass.css       | 136 -----------------------------------------
+ 6 files changed, 178 insertions(+), 198 deletions(-)
+ create mode 100644 src/ui/AsyncButton.tsx
+ delete mode 100644 src/ui/glass.css
+
+diff --git a/src/theme/apple.css b/src/theme/apple.css
+index cd12266..32042e5 100644
+--- a/src/theme/apple.css
++++ b/src/theme/apple.css
+@@ -1,33 +1,64 @@
+-/* Séquentia — DA inspirée d'Apple : clarté, déférence au contenu, ombres très douces,
+-   typographie dominante, mouvement discret. Chargée APRÈS theme.css.
+-   Aucune couleur en dur côté app : tout dérive des variables du thème (--card, --accent,
+-   --page-bg…), donc les préréglages, le mode Auto/Clair/Sombre et les couleurs perso marchent. */
++/* Séquentia — DA inspirée d'Apple + micro-interactions.
++   Chargée APRÈS theme.css. Aucune couleur de marque en dur : tout dérive des variables du
++   thème (--card, --accent, --page-bg…). Seuls --success et --danger sont fixes (états). */
+ 
+ :root {
++  /* Mouvement : tout est centralisé ici */
+   --ease-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
++  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
++  --dur-instant: 100ms;  /* press */
++  --dur-fast: 180ms;     /* hover, focus */
++  --dur-base: 280ms;     /* apparition d'un libellé, erreur */
++
+   --shadow-sm: 0 2px 8px rgba(0, 0, 0, .04);
+   --shadow-md: 0 8px 30px rgba(0, 0, 0, .08);
+   --sep: rgba(0, 0, 0, .08);
+   --r-card: 24px;
+-  --r-field: 12px;
+-  --r-pill: 980px;
++  --r-field: 14px;
++  --r-pill: 9999px;
+   --focus: color-mix(in srgb, var(--accent) 40%, transparent);
++  --success: #1f8a3b;
++  --danger: #d70015;
++  --tint: color-mix(in srgb, var(--accent) 9%, transparent);
++  --tint-hover: color-mix(in srgb, var(--accent) 15%, transparent);
+ }
+-:root[data-mode="dark"] { --sep: rgba(255, 255, 255, .08); --shadow-sm: none; --shadow-md: none; }
++:root[data-mode="dark"] { --sep: rgba(255, 255, 255, .08); --shadow-sm: none; --shadow-md: none; --success: #30d158; --danger: #ff6961; }
+ 
+-/* Typographie : corps 17px, interlettrage serré */
++/* Typographie */
+ .app { max-width: 1200px; margin: 0 auto; padding-left: 22px; padding-right: 22px;
+   font-size: 17px; line-height: 1.47; letter-spacing: -0.022em; -webkit-font-smoothing: antialiased; }
+ @media (min-width: 768px) { .app { padding-left: 40px; padding-right: 40px; } }
+ p { text-wrap: pretty; }
+-small, .badge { letter-spacing: -0.01em; }
+-
+ .logo { font-size: 24px; padding: 18px 0 4px; }
+-.titre { font-size: clamp(36px, 6vw, 56px); font-weight: 400; line-height: 1.07; letter-spacing: -0.03em;
+-  margin: 28px 0 24px; text-wrap: balance; }
++.titre { font-size: clamp(36px, 6vw, 56px); font-weight: 400; line-height: 1.07; letter-spacing: -0.03em; margin: 28px 0 24px; text-wrap: balance; }
+ h3 { font-family: var(--font-section); font-weight: 600; letter-spacing: -0.02em; line-height: 1.14; }
+ 
+-/* Navigation : 44px, sticky, translucide */
++/* Cartes */
++.card { border: 0; border-radius: var(--r-card); padding: 20px 24px; box-shadow: var(--shadow-sm); }
++:root[data-mode="dark"] .card { border: 1px solid var(--sep); }
++.lift { transition: transform var(--dur-base) var(--ease-apple), box-shadow var(--dur-base) var(--ease-apple); }
++.lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
++
++/* ───────── Boutons ─────────
++   Spécificité volontairement basse (0,0,1) pour la base : .btn, .ghost, [aria-pressed] la dominent.
++   États : défaut · hover (luminosité) · focus-visible · press (scale .97) · disabled · loading/success/error. */
++button {
++  --b: var(--tint); --f: var(--accent-text);
++  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
++  font: inherit; font-size: 16px; font-weight: 400; letter-spacing: -0.016em; line-height: 1;
++  min-height: 44px; padding: 0 22px; border: 0; border-radius: var(--r-pill);
++  background: var(--b); color: var(--f); cursor: pointer;
++  user-select: none; -webkit-tap-highlight-color: transparent;
++  transition: transform var(--dur-instant) var(--ease-apple), filter var(--dur-fast) var(--ease-apple),
++              background-color var(--dur-fast) var(--ease-apple), color var(--dur-fast) var(--ease-apple);
++}
++button:where(:hover:not(:disabled)) { --b: var(--tint-hover); filter: brightness(1.08); }
++button:where(:active:not(:disabled)) { transform: scale(.97); filter: brightness(.92); }
++button:disabled { opacity: .4; cursor: not-allowed; }
++.btn, button[aria-pressed="true"] { --b: var(--accent); --f: #fff; font-weight: 600; }
++.btn.ghost:not([aria-pressed="true"]) { --b: var(--tint); --f: var(--accent-text); font-weight: 400; }
++
++/* Navigation : 44px, sticky, translucide (ses boutons sont des liens, pas des CTA) */
+ .nav {
+   position: sticky; top: 0; z-index: 20; align-items: center; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
+   height: 44px; margin: 0 -22px; padding: 0 18px;
+@@ -36,46 +67,63 @@ h3 { font-family: var(--font-section); font-weight: 600; letter-spacing: -0.02em
+   border-bottom: 1px solid var(--sep);
+ }
+ @media (min-width: 768px) { .nav { margin: 0 -40px; padding: 0 36px; } }
+-.nav button { padding: 6px 14px; font-size: 14px; font-weight: 400; letter-spacing: -0.016em; white-space: nowrap;
+-  transition: background .2s var(--ease-apple), color .2s var(--ease-apple); }
+-.nav button:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+-.nav button[aria-current="page"] { font-weight: 600; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-text); }
++.nav button { --b: transparent; --f: var(--text); min-height: 0; height: 32px; padding: 0 14px; font-size: 14px; letter-spacing: -0.016em; white-space: nowrap; }
++.nav button:hover { --b: color-mix(in srgb, var(--accent) 8%, transparent); filter: none; }
++.nav button:active { transform: none; filter: none; }
++.nav button[aria-current="page"] { --b: color-mix(in srgb, var(--accent) 12%, transparent); --f: var(--accent-text); font-weight: 600; }
+ 
+-/* Cartes : sans bordure, ombre quasi invisible (en sombre : bordure fine, pas d'ombre) */
+-.card { border: 0; border-radius: var(--r-card); padding: 20px 24px; box-shadow: var(--shadow-sm); }
+-:root[data-mode="dark"] .card { border: 1px solid var(--sep); }
+-.lift { transition: transform .25s var(--ease-apple), box-shadow .25s var(--ease-apple); }
+-.lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
++/* Contrôle segmenté (onglets Édition / Aperçu) */
++.tabs-review { gap: 0 !important; padding: 3px; width: fit-content; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 7%, transparent); }
++.tabs-review button.btn.ghost { --b: transparent; --f: var(--text); min-height: 36px; padding: 0 18px; font-weight: 400; }
++.tabs-review button.btn.ghost[aria-pressed="true"] { --b: var(--card); --f: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+ 
+-/* Boutons : secondaire par défaut (teinte douce) ; .btn = primaire plein */
+-button:not(.nav button) {
+-  font: inherit; font-size: 15px; font-weight: 400; letter-spacing: -0.016em; color: var(--accent-text);
+-  min-height: 44px; padding: 10px 20px; cursor: pointer; border: 0; border-radius: var(--r-pill);
+-  background: color-mix(in srgb, var(--accent) 9%, transparent);
+-  transition: opacity .2s var(--ease-apple), background .2s var(--ease-apple);
+-}
+-button:not(.nav button):hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+-button:not(.nav button):disabled { opacity: .4; cursor: not-allowed; }
+-.btn, button[aria-pressed="true"]:not(.nav button) { background: var(--accent); color: #fff; font-weight: 600; }
+-.btn:hover:not(:disabled), button[aria-pressed="true"]:not(.nav button):hover:not(:disabled) { background: var(--accent); opacity: .88; }
+-.btn:active:not(:disabled) { opacity: .75; }
++/* États asynchrones (AsyncButton) : largeur stable, libellé qui apparaît, coche dessinée, shake */
++.async-label { display: inline-flex; align-items: center; gap: 8px; animation: label-in var(--dur-base) var(--ease-apple) both; }
++.async[data-state="loading"] { cursor: progress; }
++.async[data-state="success"] { --b: var(--success) !important; --f: #fff !important; }
++.async[data-state="error"] { --b: var(--danger) !important; --f: #fff !important; animation: shake .4s var(--ease-apple); }
++.spin { animation: spin .8s linear infinite; }
++.check path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .35s var(--ease-out-expo) .05s forwards; }
++@keyframes label-in { from { opacity: 0; transform: translateY(8px); } }
++@keyframes spin { to { transform: rotate(360deg); } }
++@keyframes draw { to { stroke-dashoffset: 0; } }
++@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
++@keyframes pulse { 50% { opacity: .35; } }
+ 
+-/* Champs */
+-input:not([type="checkbox"]):not([type="file"]), select, textarea {
+-  font: inherit; font-size: 16px; letter-spacing: -0.01em; color: var(--text); min-height: 44px;
+-  background: color-mix(in srgb, var(--text) 5%, transparent); border: 1px solid transparent; border-radius: var(--r-field);
+-  transition: border-color .2s var(--ease-apple), box-shadow .2s var(--ease-apple);
++/* ───────── Champs ───────── */
++input:not([type="checkbox"]):not([type="file"]):not([type="color"]), select, textarea {
++  font: inherit; font-size: 16px; letter-spacing: -0.01em; color: var(--text); min-height: 56px;
++  background: color-mix(in srgb, var(--text) 5%, transparent); border: 1.5px solid transparent; border-radius: var(--r-field);
++  transition: border-color var(--dur-fast) var(--ease-apple), background-color var(--dur-fast) var(--ease-apple), box-shadow var(--dur-fast) var(--ease-apple);
+ }
+ textarea { min-height: 0; }
+-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); }
++input:not([type="checkbox"]):not([type="file"]):not([type="color"]):hover, select:hover, textarea:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
++input:focus, select:focus, textarea:focus { outline: none; background: var(--card); border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
++[aria-invalid="true"] { border-color: var(--danger) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 12%, transparent); }
+ fieldset { border: 1px solid var(--sep); border-radius: 16px; }
+ :focus-visible { outline: 4px solid var(--focus); outline-offset: 2px; }
+ .nav button:focus-visible { outline-offset: -2px; }
+ 
++/* Case à cocher : cercle, coche blanche, léger rebond au press */
++input[type="checkbox"] {
++  -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin: 0 10px 0 0; vertical-align: -6px; cursor: pointer;
++  border: 1.5px solid color-mix(in srgb, var(--text) 35%, transparent); border-radius: 50%;
++  background: transparent center / 14px no-repeat;
++  transition: background-color var(--dur-fast) var(--ease-apple), border-color var(--dur-fast) var(--ease-apple), transform var(--dur-instant) var(--ease-apple);
++}
++input[type="checkbox"]:checked {
++  background-color: var(--accent); border-color: var(--accent);
++  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
++}
++input[type="checkbox"]:active { transform: scale(.88); }
++
+ /* Les fiches gardent leur charte : on annule l'interlettrage et l'interligne hérités de .app */
+ [data-fiche] { font-size: 16px; line-height: normal; letter-spacing: normal; }
+ 
++/* Réduction des animations : plus de mouvement, mais les états (erreur, succès) restent visibles */
+ @media (prefers-reduced-motion: reduce) {
+-  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
++  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
++  .async .spin { animation: pulse 1.2s ease-in-out infinite !important; animation-duration: 1.2s !important; animation-iteration-count: infinite !important; }
++  .check path { stroke-dashoffset: 0; }
+ }
+ @media print { .nav { display: none !important; } .card { box-shadow: none !important; } }
+diff --git a/src/ui/AsyncButton.tsx b/src/ui/AsyncButton.tsx
+new file mode 100644
+index 0000000..3684c55
+--- /dev/null
++++ b/src/ui/AsyncButton.tsx
+@@ -0,0 +1,61 @@
++import { useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
++
++type State = 'idle' | 'loading' | 'success' | 'error';
++type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'children'> & {
++  /** Action asynchrone. `false` ou une exception = échec ; tout le reste = succès. */
++  run: () => Promise<boolean | void>;
++  children: ReactNode;
++  successLabel?: string;
++  errorLabel?: string;
++};
++
++function Spinner() {
++  return (
++    <svg className="spin" width="20" height="20" viewBox="0 0 24 24" role="img" aria-label="Chargement">
++      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeOpacity=".25" strokeWidth="3" />
++      <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
++    </svg>
++  );
++}
++function Check() {
++  return (
++    <svg className="check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
++      <path d="M5 13l4 4L19 7" pathLength={1} />
++    </svg>
++  );
++}
++
++/** Bouton à états idle → loading → success | error. La largeur reste stable entre les états. */
++export default function AsyncButton({ run, children, successLabel = 'Terminé', errorLabel = 'Réessayer', className = '', ...rest }: Props) {
++  const [state, setState] = useState<State>('idle');
++  const [width, setWidth] = useState<number | undefined>();
++  const ref = useRef<HTMLButtonElement>(null);
++  const timer = useRef<number | undefined>(undefined);
++  useEffect(() => () => window.clearTimeout(timer.current), []);
++
++  const click = async () => {
++    if (state === 'loading') return;
++    window.clearTimeout(timer.current);
++    setWidth(ref.current?.offsetWidth);
++    setState('loading');
++    const t0 = Date.now();
++    let ok = true;
++    try { ok = (await run()) !== false; } catch { ok = false; }
++    const reste = 400 - (Date.now() - t0); // évite le flash du spinner
++    if (reste > 0) await new Promise((r) => setTimeout(r, reste));
++    setState(ok ? 'success' : 'error');
++    timer.current = window.setTimeout(() => { setState('idle'); setWidth(undefined); }, ok ? 1600 : 2200);
++  };
++
++  return (
++    <button ref={ref} {...rest} className={`${className} async`.trim()} data-state={state} aria-busy={state === 'loading'}
++      style={{ ...rest.style, minWidth: width }} onClick={() => void click()}>
++      <span className="async-label" key={state}>
++        {state === 'loading' && <Spinner />}
++        {state === 'success' && <><Check />{successLabel}</>}
++        {state === 'error' && errorLabel}
++        {state === 'idle' && children}
++      </span>
++    </button>
++  );
++}
+diff --git a/src/ui/Library.tsx b/src/ui/Library.tsx
+index e9cc609..6a631db 100644
+--- a/src/ui/Library.tsx
++++ b/src/ui/Library.tsx
+@@ -1,4 +1,5 @@
+ import { useEffect, useMemo, useRef, useState } from 'react';
++import AsyncButton from './AsyncButton';
+ import { printPages } from '../lib/export/pdf';
+ import { exportPng, isLikelyBlank } from '../lib/export/png';
+ import type { GithubRepo } from '../lib/github/repo';
+@@ -42,6 +43,23 @@ export default function Library({ repo, db, onEdit, onRedo }: Props) {
+ 
+   useEffect(() => { if (fiche && preview.current) renderFiche(preview.current, fiche); }, [fiche]);
+ 
++  const exporterPng = async (): Promise<boolean> => {
++    if (!sel) return false;
++    const pages = [...(preview.current?.querySelectorAll<HTMLElement>('.fiche-page') ?? [])];
++    try {
++      const blobs = await exportPng(pages);
++      if (blobs.some(isLikelyBlank)) { setMsg("L'image semble vide. Utilise l'export PDF"); return false; }
++      blobs.forEach((b, n) => {
++        const a = document.createElement('a');
++        a.href = URL.createObjectURL(b);
++        a.download = `${sel.slug}-${n + 1}.png`;
++        a.click();
++        setTimeout(() => URL.revokeObjectURL(a.href), 10000);
++      });
++      return true;
++    } catch { setMsg("L'export PNG a échoué. Utilise l'export PDF"); return false; }
++  };
++
+   if (!repo) return <div className="card">Ajoute ton jeton GitHub, le propriétaire et le nom du dépôt dans Réglages.</div>;
+ 
+   return (
+@@ -69,22 +87,7 @@ export default function Library({ repo, db, onEdit, onRedo }: Props) {
+         <div className="card" style={{ marginTop: 12 }}>
+           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+             {fiche && <button className="btn" onClick={() => printPages(fiche.meta.format ?? 'fiche')}>Exporter en PDF</button>}
+-            {fiche && (
+-              <button className="btn ghost" onClick={async () => {
+-                const pages = [...(preview.current?.querySelectorAll<HTMLElement>('.fiche-page') ?? [])];
+-                try {
+-                  const blobs = await exportPng(pages);
+-                  if (blobs.some(isLikelyBlank)) { setMsg("L'image semble vide. Utilise l'export PDF"); return; }
+-                  blobs.forEach((b, n) => {
+-                    const a = document.createElement('a');
+-                    a.href = URL.createObjectURL(b);
+-                    a.download = `${sel.slug}-${n + 1}.png`;
+-                    a.click();
+-                    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+-                  });
+-                } catch { setMsg("L'export PNG a échoué. Utilise l'export PDF"); }
+-              }}>Exporter en PNG</button>
+-            )}
++            {fiche && <AsyncButton className="btn ghost" successLabel="Exporté" run={exporterPng}>Exporter en PNG</AsyncButton>}
+             {onEdit && sel.kind === 'fiche' && <button className="btn ghost" onClick={() => onEdit(sel.path)}>Modifier</button>}
+             {fiche && <button className="btn ghost" disabled={!fiche.meta.brief || !onRedo} onClick={() => fiche.meta.brief && onRedo?.(fiche.meta.brief)}>Refaire à partir de ce brief</button>}
+             {fiche && (
+diff --git a/src/ui/Review.tsx b/src/ui/Review.tsx
+index 11f9cb0..82d13d8 100644
+--- a/src/ui/Review.tsx
++++ b/src/ui/Review.tsx
+@@ -13,6 +13,7 @@ import { validateFiche } from '../lib/schema/validate';
+ import type { Db, Draft } from '../lib/storage/db';
+ import { getSettings } from '../lib/storage/settings';
+ import type { Block, Brief, Fiche, Problem } from '../lib/types';
++import AsyncButton from './AsyncButton';
+ import { makeGenerateDeps, renderOffscreen } from './geminiDeps';
+ import { messageFor } from './messages';
+ 
+@@ -71,8 +72,8 @@ export default function Review({ repo, db, draft, path }: Props) {
+   const bloquants = checks.schema.length + checks.lint.length + checks.katex.length;
+   const peutValider = !!repo && !!fiche && canValidate(checked) && bloquants === 0;
+ 
+-  const valider = async (force = false) => {
+-    if (!repo || !fiche) return;
++  const valider = async (force = false): Promise<boolean> => {
++    if (!repo || !fiche) return false;
+     setBusy(true); setMsg('');
+     try {
+       const saved = await validerFiche(repo, fiche, { baseSha, force });
+@@ -80,11 +81,13 @@ export default function Review({ repo, db, draft, path }: Props) {
+       setBaseSha((await repo.readFile(saved)).sha);
+       setConflict(null);
+       setMsg(`Fiche validée : ${saved}`);
++      return true;
+     } catch (e) {
+       if (e instanceof ConflictError) {
+         try { setConflict((await repo.readFile(ficheSavePath(fiche))).content); } catch { setConflict('(version distante introuvable)'); }
+         setMsg(messageFor(e));
+       } else setMsg(messageFor(e, { source: 'github', offline: !navigator.onLine }));
++      return false;
+     } finally { setBusy(false); }
+   };
+ 
+@@ -178,7 +181,7 @@ export default function Review({ repo, db, draft, path }: Props) {
+         <textarea placeholder="Consigne pour Gemini (par exemple : découpe la page 3)" style={{ width: '100%', padding: 8, marginTop: 8 }} rows={2} value={instruction} onChange={(e) => setInstruction(e.target.value)} />
+         <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+           <button className="btn ghost" disabled={busy || !instruction.trim()} onClick={() => void corriger()}>Corriger avec Gemini</button>
+-          <button className="btn" disabled={!peutValider || busy} onClick={() => void valider()}>Valider</button>
++          <AsyncButton className="btn" successLabel="Validée" disabled={!peutValider || busy} run={() => valider()}>Valider</AsyncButton>
+         </div>
+         {!peutValider && <p style={{ fontSize: 13 }}>Valider s'active quand toutes les cases sont cochées et que schéma, lint et KaTeX sont au vert.</p>}
+         {msg && <p role="status">{msg}</p>}
+diff --git a/src/ui/Settings.tsx b/src/ui/Settings.tsx
+index 13fa3c0..c3b19bd 100644
+--- a/src/ui/Settings.tsx
++++ b/src/ui/Settings.tsx
+@@ -1,4 +1,5 @@
+ import { useState } from 'react';
++import AsyncButton from './AsyncButton';
+ import ThemeSettings from './ThemeSettings';
+ import { clearKeys, getSettings, saveSettings, type Settings as S } from '../lib/storage/settings';
+ 
+@@ -56,8 +57,8 @@ export default function Settings() {
+       {num('maxPerDay', 'Requêtes par jour')}
+       {num('lotPages', 'Pages par lot (import de cours)')}
+       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+-        <button className="btn" onClick={async () => setMsg(await testGithub(s))}>Tester la connexion GitHub</button>
+-        <button className="btn" onClick={async () => setMsg(await testGemini(s))}>Tester la connexion Gemini</button>
++        <AsyncButton className="btn ghost" successLabel="Connecté" run={async () => { const r = await testGithub(s); setMsg(r); return r.endsWith('connecté'); }}>Tester la connexion GitHub</AsyncButton>
++        <AsyncButton className="btn ghost" successLabel="Connecté" run={async () => { const r = await testGemini(s); setMsg(r); return r.endsWith('connecté'); }}>Tester la connexion Gemini</AsyncButton>
+         <button className="btn ghost" onClick={() => { clearKeys(); setS(getSettings()); setMsg('Clés effacées'); }}>Effacer mes clés</button>
+       </div>
+       {msg && <p role="status">{msg}</p>}
+diff --git a/src/ui/glass.css b/src/ui/glass.css
+deleted file mode 100644
+index c20664d..0000000
+--- a/src/ui/glass.css
++++ /dev/null
+@@ -1,136 +0,0 @@
+-/* Séquentia — couche « floaty & glassy »
+-   À importer EN DERNIER dans src/main.tsx :  import './styles/glass.css';
+-   Aucune dépendance : variables CSS + sélecteurs utilitaires (.glass, .nav-pill, .btn…). */
+-
+-:root {
+-  --brand: #DD0033;
+-  --brand-hi: #FF3D63;
+-  --brand-lo: #A8002A;
+-  --ink: #1B1215;
+-  --ink-soft: #5C4A50;
+-  --bg: #FBF5F6;
+-  --glass: rgba(255, 255, 255, .58);
+-  --glass-strong: rgba(255, 255, 255, .78);
+-  --glass-edge: rgba(255, 255, 255, .85);
+-  --glass-line: rgba(221, 0, 51, .12);
+-  --shadow-float: 0 18px 50px -12px rgba(120, 10, 40, .28), 0 4px 14px -4px rgba(120, 10, 40, .14);
+-  --radius: 22px;
+-  --radius-pill: 999px;
+-  --font-title: 'Andaluz', 'Inter Variable', system-ui, serif;
+-  --font-section: 'Melbourne', 'Inter Variable', system-ui, sans-serif;
+-  --font-body: 'Inter Variable', system-ui, -apple-system, sans-serif;
+-}
+-:root[data-theme="dark"] {
+-  --ink: #FBEFF1; --ink-soft: #C9B3B9; --bg: #140A0D;
+-  --glass: rgba(40, 20, 26, .55); --glass-strong: rgba(52, 26, 34, .78);
+-  --glass-edge: rgba(255, 255, 255, .14); --glass-line: rgba(255, 61, 99, .22);
+-  --shadow-float: 0 18px 50px -12px rgba(0, 0, 0, .7), 0 4px 14px -4px rgba(0, 0, 0, .5);
+-}
+-@media (prefers-color-scheme: dark) {
+-  :root:not([data-theme="light"]) {
+-    --ink: #FBEFF1; --ink-soft: #C9B3B9; --bg: #140A0D;
+-    --glass: rgba(40, 20, 26, .55); --glass-strong: rgba(52, 26, 34, .78);
+-    --glass-edge: rgba(255, 255, 255, .14); --glass-line: rgba(255, 61, 99, .22);
+-    --shadow-float: 0 18px 50px -12px rgba(0, 0, 0, .7), 0 4px 14px -4px rgba(0, 0, 0, .5);
+-  }
+-}
+-
+-html, body { background: var(--bg); color: var(--ink); font-family: var(--font-body); }
+-
+-/* Fond : halos flous qui dérivent lentement */
+-body::before {
+-  content: ''; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+-  background:
+-    radial-gradient(40% 35% at 15% 20%, rgba(221, 0, 51, .30), transparent 70%),
+-    radial-gradient(35% 40% at 85% 15%, rgba(255, 120, 150, .28), transparent 70%),
+-    radial-gradient(45% 40% at 70% 90%, rgba(255, 190, 120, .22), transparent 70%);
+-  filter: blur(40px);
+-  animation: drift 26s ease-in-out infinite alternate;
+-}
+-@keyframes drift { to { transform: translate3d(3%, -2%, 0) scale(1.08); } }
+-
+-/* Verre */
+-.glass, .card, .panel {
+-  background: var(--glass);
+-  -webkit-backdrop-filter: blur(22px) saturate(170%);
+-  backdrop-filter: blur(22px) saturate(170%);
+-  border: 1px solid var(--glass-edge);
+-  border-radius: var(--radius);
+-  box-shadow: var(--shadow-float), inset 0 1px 0 rgba(255, 255, 255, .5);
+-}
+-
+-/* Navigation flottante, comme sur le site : Accueil · Produits · Contact */
+-.nav-pill {
+-  position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); z-index: 20;
+-  display: flex; gap: 4px; width: fit-content; margin: 12px auto 0; padding: 6px;
+-  background: var(--glass); border: 1px solid var(--glass-edge); border-radius: var(--radius-pill);
+-  -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
+-  box-shadow: var(--shadow-float);
+-}
+-.nav-pill a, .nav-pill button {
+-  font: 600 .95rem var(--font-body); color: var(--ink-soft); background: none; border: 0;
+-  padding: 10px 18px; border-radius: var(--radius-pill); cursor: pointer; text-decoration: none;
+-  transition: background .25s, color .25s, transform .25s;
+-}
+-.nav-pill a:hover, .nav-pill button:hover { color: var(--ink); transform: translateY(-1px); }
+-.nav-pill [aria-current="page"], .nav-pill .active {
+-  color: #fff; background: linear-gradient(135deg, var(--brand-hi), var(--brand));
+-  box-shadow: 0 6px 16px -4px rgba(221, 0, 51, .55);
+-}
+-
+-/* Boutons */
+-.btn {
+-  font: 700 1rem var(--font-body); color: #fff; border: 0; cursor: pointer;
+-  padding: 14px 26px; border-radius: var(--radius-pill);
+-  background: linear-gradient(135deg, var(--brand-hi), var(--brand) 60%, var(--brand-lo));
+-  box-shadow: 0 12px 28px -8px rgba(221, 0, 51, .6), inset 0 1px 0 rgba(255, 255, 255, .35);
+-  transition: transform .25s cubic-bezier(.2, .8, .2, 1), box-shadow .25s;
+-}
+-.btn:hover { transform: translateY(-3px); box-shadow: 0 18px 34px -8px rgba(221, 0, 51, .65), inset 0 1px 0 rgba(255, 255, 255, .35); }
+-.btn:active { transform: translateY(0) scale(.98); }
+-.btn:disabled { filter: grayscale(.7); opacity: .5; cursor: not-allowed; transform: none; }
+-.btn.ghost { color: var(--ink); background: var(--glass); border: 1px solid var(--glass-edge); box-shadow: var(--shadow-float); }
+-
+-/* Champs */
+-input, select, textarea {
+-  font: inherit; color: var(--ink); background: var(--glass-strong);
+-  border: 1px solid var(--glass-line); border-radius: 14px; padding: 12px 14px; outline: none;
+-  transition: border-color .2s, box-shadow .2s;
+-}
+-input:focus, select:focus, textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 4px rgba(221, 0, 51, .15); }
+-
+-/* Titres */
+-h1 { font-family: var(--font-title); letter-spacing: -.01em; }
+-h2, h3 { font-family: var(--font-section); }
+-
+-/* Fiches flottantes (bibliothèque, accueil) */
+-.float-card { animation: float 7s ease-in-out infinite; transition: transform .35s; }
+-.float-card:nth-child(2n) { animation-delay: -2.3s; }
+-.float-card:nth-child(3n) { animation-delay: -4.6s; }
+-.float-card:hover { animation-play-state: paused; transform: translateY(-8px) rotate(-.6deg) scale(1.02); }
+-@keyframes float { 50% { transform: translateY(-10px) rotate(.4deg); } }
+-
+-/* ⚠ Export PDF/PNG : la fiche doit rester PLATE (modern-screenshot ne rend pas
+-   fiablement backdrop-filter ; une fiche vitrée risque de sortir blanche). */
+-.fiche, .fiche *, .export-root, .export-root * {
+-  -webkit-backdrop-filter: none !important; backdrop-filter: none !important; animation: none !important;
+-}
+-
+-@media (prefers-reduced-motion: reduce) {
+-  body::before, .float-card { animation: none; }
+-  * { transition-duration: .01ms !important; }
+-}
+-/* Onglets Édition / Aperçu (Review) */
+-.btn.ghost[aria-pressed="true"] {
+-  color: #fff; border-color: transparent;
+-  background: linear-gradient(135deg, var(--brand-hi), var(--brand));
+-}
+-fieldset { border: 1px solid var(--glass-line); border-radius: 16px; }
+-.badge.ok { color: #0a7a3d; background: rgba(10, 160, 80, .14); padding: 2px 8px; border-radius: 99px; font-size: .75rem; font-weight: 700; }
+-
+-/* Impression PDF : aucune vitre autour des pages */
+-@media print {
+-  body::before, .nav-pill { display: none !important; }
+-  .glass, .card, .panel { background: none !important; border: 0 !important; box-shadow: none !important;
+-    -webkit-backdrop-filter: none !important; backdrop-filter: none !important; animation: none !important; }
+-}
+-- 
+2.43.0
+

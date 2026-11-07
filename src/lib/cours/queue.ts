@@ -32,14 +32,17 @@ export class ImportQueue {
   }
 
   /** Traite les lots restants. Quota ou réseau : s'arrête avec 'paused' sans perdre ce qui est fait. */
-  async run(id: string): Promise<'done' | 'paused'> {
+  async run(id: string, opts?: { signal?: AbortSignal; onLotStart?: (lotIndex: number) => void }): Promise<'done' | 'paused'> {
     const st = await this.load(id);
     for (let i = st.next; i < st.lots.length; i++) {
+      if (opts?.signal?.aborted) return 'paused';
+      opts?.onLotStart?.(i);
       const s = st.lots[i];
       try {
         st.results[i] = await this.transcribe({ index: s.index, fromPage: s.fromPage, toPage: s.toPage, mime: s.mime, data: fromBase64(s.b64) });
       } catch (e) {
         if (e instanceof RateLimitError || e instanceof NetworkError) return 'paused';
+        if (opts?.signal?.aborted) return 'paused';
         throw e;
       }
       st.next = i + 1;
@@ -47,6 +50,7 @@ export class ImportQueue {
     }
     return 'done';
   }
+
 
   async progress(id: string): Promise<{ done: number; total: number }> {
     const st = await this.load(id);

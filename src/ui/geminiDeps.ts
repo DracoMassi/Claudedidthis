@@ -1,4 +1,4 @@
-import { RateLimitError } from '../lib/errors';
+import { AbortedError, RateLimitError } from '../lib/errors';
 import { callGemini } from '../lib/gemini/client';
 import { RequestBudget } from '../lib/gemini/budget';
 import type { GenerateDeps } from '../lib/generate/loop';
@@ -20,16 +20,32 @@ export function renderOffscreen(f: Fiche): { katexErrors: string[]; overflow: nu
 }
 
 /** Dépendances de la boucle de génération : Gemini (avec plafonds locaux), validation, lint, rendu. */
-export function makeGenerateDeps(s: Settings, system: string, onTour: (n: number) => void): GenerateDeps {
+export function makeGenerateDeps(
+  s: Settings,
+  system: string,
+  onTour: (n: number) => void,
+  opts?: { signal?: AbortSignal; timeoutMs?: number },
+): GenerateDeps {
   const budget = new RequestBudget({ perMinute: s.maxPerMinute, perDay: s.maxPerDay }, undefined, 'sequentia.budget');
   let n = 0;
   return {
     llm: async (messages) => {
+      if (opts?.signal?.aborted) throw new AbortedError();
       if (!budget.canSend()) throw new RateLimitError(budget.waitSeconds());
       budget.record();
       onTour(++n);
-      return callGemini({ key: s.geminiKey, model: s.model, system, messages });
+      return callGemini({
+        key: s.geminiKey,
+        model: s.model,
+        system,
+        messages,
+        signal: opts?.signal,
+        timeoutMs: opts?.timeoutMs,
+      });
     },
-    validate: validateFiche, lint: lintLatex, render: renderOffscreen,
+    validate: validateFiche,
+    lint: lintLatex,
+    render: renderOffscreen,
   };
 }
+

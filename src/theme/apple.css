@@ -1,0 +1,163 @@
+/* Séquentia — DA inspirée d'Apple + micro-interactions.
+   Chargée APRÈS theme.css. Aucune couleur de marque en dur : tout dérive des variables du
+   thème (--card, --accent, --page-bg…). Seuls --success et --danger sont fixes (états). */
+
+:root {
+  /* Mouvement : tout est centralisé ici */
+  --ease-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-instant: 100ms;  /* press */
+  --dur-fast: 180ms;     /* hover, focus */
+  --dur-base: 280ms;     /* apparition d'un libellé, erreur */
+
+  --ease-spring-soft: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --shadow-sm: none;                      /* minimalisme : pas d'ombre au repos */
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, .07);
+  --sep: rgba(0, 0, 0, .09);
+  --r-card: 24px;
+  --r-field: 14px;
+  --r-pill: 9999px;
+  --focus: color-mix(in srgb, var(--accent) 40%, transparent);
+  --success: #1f8a3b;
+  --danger: #d70015;
+  --tint: color-mix(in srgb, var(--text) 7%, transparent);        /* boutons secondaires : gris neutre */
+  --tint-hover: color-mix(in srgb, var(--text) 12%, transparent);
+}
+:root[data-mode="dark"] { --sep: rgba(255, 255, 255, .14); --shadow-md: none; --success: #30d158; --danger: #ff6961; }
+
+/* Typographie */
+.app { max-width: 1200px; margin: 0 auto; padding-left: 22px; padding-right: 22px;
+  font-size: 17px; line-height: 1.47; letter-spacing: -0.022em; -webkit-font-smoothing: antialiased; }
+@media (min-width: 768px) { .app { padding-left: 40px; padding-right: 40px; } }
+p { text-wrap: pretty; }
+.logo { font-size: 24px; padding: 18px 0 4px; }
+.titre { color: var(--text); }
+.titre { font-size: clamp(36px, 6vw, 56px); font-weight: 400; line-height: 1.07; letter-spacing: -0.03em; margin: 28px 0 24px; text-wrap: balance; }
+h3 { font-family: var(--font-section); font-weight: 600; letter-spacing: -0.02em; line-height: 1.14; }
+
+/* Cartes */
+.card { border: 0; border-radius: var(--r-card); padding: 20px 24px; box-shadow: var(--shadow-sm); }
+:root[data-mode="dark"] .card { border: 1px solid var(--sep); }
+.lift { transition: transform var(--dur-base) var(--ease-apple), box-shadow var(--dur-base) var(--ease-apple); }
+.lift:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+
+/* ───────── Boutons ─────────
+   Spécificité volontairement basse (0,0,1) pour la base : .btn, .ghost, [aria-pressed] la dominent.
+   États : défaut · hover (luminosité) · focus-visible · press (scale .97) · disabled · loading/success/error. */
+button {
+  --b: var(--tint); --f: var(--text);
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: inherit; font-size: 16px; font-weight: 400; letter-spacing: -0.016em; line-height: 1;
+  min-height: 44px; padding: 0 22px; border: 0; border-radius: var(--r-pill);
+  background: var(--b); color: var(--f); cursor: pointer;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+  transition: transform var(--dur-instant) var(--ease-apple), filter var(--dur-fast) var(--ease-apple),
+              background-color var(--dur-fast) var(--ease-apple), color var(--dur-fast) var(--ease-apple);
+}
+button:where(:hover:not(:disabled)) { --b: var(--tint-hover); filter: brightness(1.08); }
+button:where(:active:not(:disabled)) { transform: scale(.97); filter: brightness(.92); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+.btn, button[aria-pressed="true"] { --b: var(--accent); --f: #fff; font-weight: 600; }
+.btn.ghost:not([aria-pressed="true"]) { --b: var(--tint); --f: var(--text); font-weight: 400; }
+
+/* Navigation : 44px, sticky, translucide (ses boutons sont des liens, pas des CTA) */
+.nav {
+  position: sticky; top: 0; z-index: 20; align-items: center; gap: 2px; flex-wrap: nowrap; overflow-x: auto;
+  height: 44px; margin: 0 -22px; padding: 0 18px;
+  background: color-mix(in srgb, var(--page-bg) 72%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--sep);
+}
+@media (min-width: 768px) { .nav { margin: 0 -40px; padding: 0 36px; } }
+.nav button { --b: transparent; --f: var(--text); min-height: 0; height: 32px; padding: 0 14px; font-size: 14px; letter-spacing: -0.016em; white-space: nowrap; }
+.nav button:hover { --b: var(--tint); filter: none; }
+.nav button:active { transform: none; filter: none; }
+.nav button[aria-current="page"] { --b: var(--tint-hover); --f: var(--text); font-weight: 600; }
+
+/* Contrôle segmenté (onglets Édition / Aperçu) */
+.tabs-review { gap: 0 !important; padding: 3px; width: fit-content; border-radius: var(--r-pill); background: color-mix(in srgb, var(--text) 7%, transparent); }
+.tabs-review button.btn.ghost { --b: transparent; --f: var(--text); min-height: 36px; padding: 0 18px; font-weight: 400; }
+.tabs-review button.btn.ghost[aria-pressed="true"] { --b: var(--card); --f: var(--text); font-weight: 600; box-shadow: var(--shadow-sm); }
+
+/* États asynchrones (AsyncButton) : largeur stable, libellé qui apparaît, coche dessinée, shake */
+.async-label { display: inline-flex; align-items: center; gap: 8px; animation: label-in var(--dur-base) var(--ease-apple) both; }
+.async[data-state="loading"] { cursor: progress; }
+.async[data-state="success"] { --b: var(--success) !important; --f: #fff !important; }
+.async[data-state="error"] { --b: var(--danger) !important; --f: #fff !important; animation: shake .4s var(--ease-apple); }
+.spin { animation: spin .8s linear infinite; }
+.check path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .35s var(--ease-out-expo) .05s forwards; }
+@keyframes label-in { from { opacity: 0; transform: translateY(8px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes shake { 20% { transform: translateX(-6px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+@keyframes pulse { 50% { opacity: .35; } }
+
+/* ───────── Champs ───────── */
+input:not([type="checkbox"]):not([type="file"]):not([type="color"]), select, textarea {
+  font: inherit; font-size: 16px; letter-spacing: -0.01em; color: var(--text); min-height: 56px; width: 100%;
+  background: var(--page-bg); border: 1.5px solid var(--sep); border-radius: var(--r-field);
+  transition: border-color var(--dur-fast) var(--ease-apple), box-shadow var(--dur-fast) var(--ease-apple);
+}
+textarea { min-height: 0; resize: vertical; }
+input:not([type="checkbox"]):not([type="file"]):not([type="color"]):hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--text) 28%, transparent); }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent); }
+[aria-invalid="true"] { border-color: var(--danger) !important; box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 12%, transparent); }
+
+/* Label flottant : le label monte quand le champ a le focus ou une valeur */
+.field { position: relative; display: block; margin: 10px 0; }
+.field > input, .field > select, .field > textarea { display: block; padding: 24px 16px 8px; }
+.field > textarea { padding-top: 28px; line-height: 1.4; }
+.field > label {
+  position: absolute; left: 17px; top: 17px; max-width: calc(100% - 34px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 16px; line-height: 22px; color: color-mix(in srgb, var(--text) 52%, transparent); pointer-events: none; transform-origin: left top;
+  transition: transform var(--dur-fast) var(--ease-apple), color var(--dur-fast) var(--ease-apple);
+}
+.field > :focus + label, .field > :not(:placeholder-shown) + label, .field-select > label { transform: translateY(-11px) scale(.76); }
+.field > :focus + label { color: var(--accent-text); }
+.field .hint { display: block; margin: 6px 4px 0; font-size: 13px; color: color-mix(in srgb, var(--text) 55%, transparent); }
+.field-select > select { -webkit-appearance: none; appearance: none; padding-right: 44px; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238E8E93' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center; }
+input[type="file"] { font: inherit; font-size: 15px; color: color-mix(in srgb, var(--text) 60%, transparent); }
+input[type="file"]::file-selector-button { font: inherit; font-weight: 600; color: var(--text); min-height: 36px; padding: 0 16px; margin-right: 12px;
+  border: 0; border-radius: var(--r-pill); background: var(--tint); cursor: pointer; transition: background-color var(--dur-fast) var(--ease-apple); }
+input[type="file"]::file-selector-button:hover { background: var(--tint-hover); }
+fieldset { border: 1px solid var(--sep); border-radius: 16px; }
+:focus-visible { outline: 4px solid var(--focus); outline-offset: 2px; }
+.nav button:focus-visible { outline-offset: -2px; }
+
+/* Case à cocher : cercle, coche blanche, léger rebond au press */
+input[type="checkbox"] {
+  -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin: 0 10px 0 0; vertical-align: -6px; cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--text) 35%, transparent); border-radius: 50%;
+  background: transparent center / 14px no-repeat;
+  transition: background-color var(--dur-fast) var(--ease-apple), border-color var(--dur-fast) var(--ease-apple), transform var(--dur-instant) var(--ease-apple);
+}
+input[type="checkbox"]:checked {
+  background-color: var(--accent); border-color: var(--accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
+}
+input[type="checkbox"]:active { transform: scale(.88); }
+
+/* ───────── Effets premium : UN seul par écran, sur l'action principale ───────── */
+.magnetic { display: inline-block; transform: translate3d(var(--tx, 0px), var(--ty, 0px), 0); transition: transform .45s var(--ease-spring-soft); will-change: transform; }
+.fx-shine, .fx-spot { overflow: hidden; }
+.fx-shine::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .35) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .8s var(--ease-out-expo); }
+.fx-shine:hover:not(:disabled)::after { transform: translateX(120%); }
+.fx-spot::before { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0;
+  background: radial-gradient(120px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .3), transparent 60%);
+  transition: opacity var(--dur-fast) var(--ease-apple); }
+.fx-spot:hover:not(:disabled)::before { opacity: 1; }
+
+/* Les fiches gardent leur charte : on annule l'interlettrage et l'interligne hérités de .app */
+[data-fiche] { font-size: 16px; line-height: normal; letter-spacing: normal; }
+
+/* Réduction des animations : plus de mouvement, mais les états (erreur, succès) restent visibles */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .async .spin { animation: pulse 1.2s ease-in-out infinite !important; animation-duration: 1.2s !important; animation-iteration-count: infinite !important; }
+  .check path { stroke-dashoffset: 0; }
+}
+@media print { .nav { display: none !important; } .card { box-shadow: none !important; } }
