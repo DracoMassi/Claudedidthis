@@ -1,0 +1,20 @@
+0000000000000000000000000000000000000000 9a50d363a3e917fde92d6f41605413dc0343acb7 Claude <claude@example.com> 1793072586 +0000	branch: Created from HEAD
+9a50d363a3e917fde92d6f41605413dc0343acb7 d008629703e87af48f8d540574a3f6d249a83969 Claude <claude@example.com> 1793072688 +0000	commit: feat: ossature, thème A+C, CSP, CI
+d008629703e87af48f8d540574a3f6d249a83969 79df9df119691d182d6b7e7481abc42dfca2b3f6 Claude <claude@example.com> 1793072814 +0000	commit: feat: schéma 1.1, validation, lint
+79df9df119691d182d6b7e7481abc42dfca2b3f6 139428ef373c58f3fd573cea72d3fef62deee5b5 Claude <claude@example.com> 1793072899 +0000	commit: feat: moteur de rendu KaTeX, formats fiche et post
+139428ef373c58f3fd573cea72d3fef62deee5b5 446e734f3e0521c021c2f1f5af3a2f907feba141 Claude <claude@example.com> 1793126674 +0000	commit: feat: réglages et stockage local
+446e734f3e0521c021c2f1f5af3a2f907feba141 31de88100f7ff4bcbab20e43e8042da45de0c387 Claude <claude@example.com> 1793126771 +0000	commit: feat: thèmes, mode sombre et personnalisation
+31de88100f7ff4bcbab20e43e8042da45de0c387 bde711870412e2e282fdfe8bbbfa63c60484375a Claude <claude@example.com> 1793126821 +0000	commit: feat: accès au dépôt GitHub
+bde711870412e2e282fdfe8bbbfa63c60484375a df0fde242a1c6459a124ed3f3f6fb2ae8591324c Claude <claude@example.com> 1793126890 +0000	commit: feat: chargement des polices depuis le dépôt privé
+df0fde242a1c6459a124ed3f3f6fb2ae8591324c ab476a1d8c5b605aa07b1048b30eff9a5aca779b Claude <claude@example.com> 1793126989 +0000	commit: feat: bibliothèque et export PDF
+ab476a1d8c5b605aa07b1048b30eff9a5aca779b 6b3d2c72d75ce24a99ab9a3e74720e96d1bf46ab Claude <claude@example.com> 1793127086 +0000	commit: feat: export PNG avec échelle sûre
+6b3d2c72d75ce24a99ab9a3e74720e96d1bf46ab 60bacc357a30781a026fc150f0a32b46aca39123 Claude <claude@example.com> 1793145998 +0000	commit: feat: génération (client Gemini, budget, contexte, boucle)
+60bacc357a30781a026fc150f0a32b46aca39123 f967e3632b20924809bb49871455be636899fb31 Claude <claude@example.com> 1793146178 +0000	commit: feat: écran Générer et brouillons
+f967e3632b20924809bb49871455be636899fb31 4ed99dc71216bc817546c46a247ed52652d210a5 Claude <claude@example.com> 1793146306 +0000	commit: feat: relecture et validation
+4ed99dc71216bc817546c46a247ed52652d210a5 d8ea704a155559690637aa8dd4c53fcb867c6918 Claude <claude@example.com> 1793169086 +0000	commit: feat: import de cours (découpage, transcription, file reprenable)
+d8ea704a155559690637aa8dd4c53fcb867c6918 75c83fb074b5b8b56c168eff88bf60ecd2289f30 Claude <claude@example.com> 1793169224 +0000	commit: feat: écran Cours
+75c83fb074b5b8b56c168eff88bf60ecd2289f30 a33f4439ff074cf5457927e58e771d892fafd902 Claude <claude@example.com> 1793169320 +0000	commit: docs: README, checklist de livraison, manifeste
+a33f4439ff074cf5457927e58e771d892fafd902 8bf814d5de97e586d98554505651b0380ca6139a DracoMassi <massinissabouhadouf@gmail.com> 1794082414 +0100	commit: test
+8bf814d5de97e586d98554505651b0380ca6139a a33f4439ff074cf5457927e58e771d892fafd902 DracoMassi <massinissabouhadouf@gmail.com> 1794082531 +0100	reset: moving to a33f4439ff074cf5457927e58e771d892fafd902
+a33f4439ff074cf5457927e58e771d892fafd902 eafb36377ddbe1c0a0e82d5ce9208d7ff22dd99e DracoMassi <massinissabouhadouf@gmail.com> 1794082535 +0100	commit: test
+eafb36377ddbe1c0a0e82d5ce9208d7ff22dd99e 72830fa557609a64650cee84a46073eb25ad7b90 DracoMassi <massinissabouhadouf@gmail.com> 1794082785 +0100	commit (merge): Merge remote-tracking branch 'origin/main' into feat/site
