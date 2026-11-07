@@ -12,7 +12,7 @@ const defaults = (): Settings => ({
   geminiKey: '', githubToken: '', owner: '', repo: '',
   model: 'gemini-3.8-flash', // MODEL par défaut de Fiches/orchestrate.py
   maxPerMinute: 5, maxPerDay: 100, lotPages: 5,
-  theme: 'ac', mode: 'auto', themeOverrides: {},
+  theme: 'd', mode: 'auto', themeOverrides: {},
 });
 
 let memory: string | null = null; // repli si localStorage est indisponible

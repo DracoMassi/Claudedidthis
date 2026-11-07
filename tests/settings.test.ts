@@ -9,7 +9,7 @@ describe('settings', () => {
     expect(s.maxPerMinute).toBe(5);
     expect(s.maxPerDay).toBe(100);
     expect(s.lotPages).toBe(5);
-    expect(s.theme).toBe('ac');
+    expect(s.theme).toBe('d');
     expect(s.mode).toBe('auto');
     expect(s.themeOverrides).toEqual({});
     expect(s.geminiKey).toBe('');

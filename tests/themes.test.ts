@@ -5,7 +5,7 @@ const NOMS: TokenName[] = ['--page-bg', '--grid-line', '--card', '--card-border'
 const HEX = /^(#[0-9A-Fa-f]{6}|transparent)$/;
 
 describe('THEMES', () => {
-  for (const id of ['ac', 'a', 'b', 'c'] as const) {
+  for (const id of ['ac', 'a', 'b', 'c', 'd'] as const) {
     for (const mode of ['light', 'dark'] as const) {
       it(`${id}/${mode} définit les douze variables`, () => {
         const t = THEMES[id][mode];
