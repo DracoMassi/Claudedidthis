@@ -1,8 +1,0 @@
-Merge remote-tracking branch 'origin/main' into feat/site
-
-# Conflicts:
-#	src/ui/Cours.tsx
-#	src/ui/Generate.tsx
-#	src/ui/Library.tsx
-#	src/ui/Review.tsx
-#	src/ui/Settings.tsx
